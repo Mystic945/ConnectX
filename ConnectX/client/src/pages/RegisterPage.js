@@ -86,7 +86,7 @@ export default function RegisterPage() {
       <div className="auth-card card" style={{ maxWidth: 480 }}>
         <div className="auth-header">
           <Link to="/" className="auth-logo">
-            🎓 Campus<span className="text-gradient">Connect</span>
+            🎓 Connect<span className="text-gradient">X</span>
           </Link>
           <h2>Create your account</h2>
           <p>Join your campus community</p>

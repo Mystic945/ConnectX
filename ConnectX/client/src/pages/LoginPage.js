@@ -32,7 +32,7 @@ export default function LoginPage() {
       <div className="auth-card card">
         <div className="auth-header">
           <Link to="/" className="auth-logo">
-            🎓 Campus<span className="text-gradient">Connect</span>
+            🎓 Connect<span className="text-gradient">X</span>
           </Link>
           <h2>Welcome back</h2>
           <p>Log in to your account</p>

@@ -9,7 +9,7 @@ export default function LandingPage() {
       <nav className="landing-nav">
         <div className="landing-logo">
           <span className="logo-icon">🎓</span>
-          <span className="logo-text">Campus<span className="text-gradient">Connect</span></span>
+          <span className="logo-text">Connect<span className="text-gradient">X</span></span>
         </div>
         <div className="landing-nav-links">
           <Link to="/login" className="btn btn-ghost btn-sm">Log in</Link>
@@ -91,7 +91,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="landing-footer">
-        <p>© 2024 CampusConnect • Built by a student, for students</p>
+        <p>© 2026 ConnectX • Built by a student, for students</p>
         <p className="footer-disclaimer">
           This is an independent, unofficial project — not affiliated with any college or university.
         </p>
