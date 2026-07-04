@@ -1,0 +1,107 @@
+.match-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.match-modal {
+  position: relative;
+  background: linear-gradient(160deg, #1a1a35, #0f0f22);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 28px;
+  padding: 48px 32px 36px;
+  text-align: center;
+  max-width: 380px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 60px rgba(139,92,246,0.15);
+}
+
+.match-glow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.match-title-wrap { margin-bottom: 36px; }
+
+.match-title {
+  font-size: 38px;
+  font-weight: 800;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.match-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.match-subtitle strong { color: var(--text-primary); }
+
+/* Avatars */
+.match-avatars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.match-avatar-item {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(139,92,246,0.5);
+  box-shadow: 0 0 24px rgba(139,92,246,0.3);
+}
+
+.match-avatar-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.match-avatar-ph {
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.match-heart {
+  font-size: 32px;
+  animation: heartBeat 0.6s ease 0.3s both;
+}
+
+@keyframes heartBeat {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.match-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
