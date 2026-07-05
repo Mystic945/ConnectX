@@ -108,7 +108,7 @@ router.post('/swipe', protect, async (req, res) => {
         if (!existingMatch) {
           match = await Match.create({
             users: [currentUser._id, targetUserId],
-            matchType: mode || 'social',
+            matchType: (mode === 'both' || !mode) ? 'social' : mode,
           });
 
           await User.findByIdAndUpdate(currentUser._id, {
