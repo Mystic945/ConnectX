@@ -25,11 +25,11 @@ router.get('/discover', protect, async (req, res) => {
     // Build filter
     const filter = {
       _id: { $nin: excludeIds },
-      college: currentUser.college, // Same college only
+      college: currentUser.college,
       isActive: true,
-      'photos.0': { $exists: true }, // Must have at least one photo
+      'photos.0': { $exists: true },
       profileComplete: true,
-      blockedUsers: { $nin: [currentUser._id] }, // Hasn't blocked current user
+      blockedUsers: { $nin: [currentUser._id] },
     };
 
     // Mode filter
@@ -37,19 +37,18 @@ router.get('/discover', protect, async (req, res) => {
       filter.$or = [{ mode: mode }, { mode: 'both' }];
     }
 
-    // Gender preference filter (for dating mode)
+    // Gender preference filter
     if (currentUser.interestedIn && currentUser.interestedIn !== 'everyone') {
       filter.gender = currentUser.interestedIn;
     }
 
-    // Optional filters from query
     if (branch) filter.branch = branch;
     if (year) filter.year = year;
 
     const users = await User.find(filter)
       .select('name age gender bio photos college branch year interests skills lookingFor mode lastActive')
       .limit(parseInt(limit))
-      .sort({ lastActive: -1 }); // More active users first
+      .sort({ lastActive: -1 });
 
     res.json({ success: true, users });
   } catch (err) {
@@ -75,12 +74,10 @@ router.post('/swipe', protect, async (req, res) => {
 
     const currentUser = req.user;
 
-    // Can't swipe yourself
     if (targetUserId === currentUser._id.toString()) {
       return res.status(400).json({ error: 'Cannot swipe on yourself.' });
     }
 
-    // Target user exists?
     const targetUser = await User.findById(targetUserId);
     if (!targetUser || !targetUser.isActive) {
       return res.status(404).json({ error: 'User not found.' });
@@ -96,16 +93,14 @@ router.post('/swipe', protect, async (req, res) => {
       });
 
       // Check if target also swiped right on current user
-      const targetSwiped = await User.findOne({
-        _id: targetUserId,
-        swipedRight: currentUser._id,
-      });
+      const targetUser2 = await User.findById(targetUserId);
+      const alreadySwiped = targetUser2.swipedRight
+        .map(id => id.toString())
+        .includes(currentUser._id.toString());
 
-      if (targetSwiped) {
-        // It's a MATCH! 🎉
+      if (alreadySwiped) {
         isMatch = true;
 
-        // Check if match already exists (race condition protection)
         const existingMatch = await Match.findOne({
           users: { $all: [currentUser._id, targetUserId] },
         });
@@ -116,7 +111,6 @@ router.post('/swipe', protect, async (req, res) => {
             matchType: mode || 'social',
           });
 
-          // Add each other to matches array
           await User.findByIdAndUpdate(currentUser._id, {
             $addToSet: { matches: targetUserId },
           });
@@ -196,7 +190,6 @@ router.put('/profile', protect, async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    // Check and update profile completeness
     const isComplete = user.checkProfileComplete();
     if (isComplete !== user.profileComplete) {
       user.profileComplete = isComplete;
@@ -225,13 +218,11 @@ router.post('/report', protect, async (req, res) => {
       $addToSet: { reportedBy: req.user._id },
     });
 
-    // Auto-deactivate if too many reports (basic moderation)
     const targetUser = await User.findById(targetUserId);
     if (targetUser && targetUser.reportedBy.length >= 5) {
       await User.findByIdAndUpdate(targetUserId, { isActive: false });
     }
 
-    // Also block them from your feed
     await User.findByIdAndUpdate(req.user._id, {
       $addToSet: { blockedUsers: targetUserId },
     });
@@ -253,7 +244,6 @@ router.post('/block', protect, async (req, res) => {
       $addToSet: { blockedUsers: targetUserId },
     });
 
-    // Remove any match between them
     await Match.findOneAndUpdate(
       { users: { $all: [req.user._id, targetUserId] } },
       { isActive: false }
