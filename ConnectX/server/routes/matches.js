@@ -10,6 +10,7 @@ const router = express.Router();
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
+    // Find matches by users array — more reliable than user.matches array
     const matches = await Match.find({
       users: req.user._id,
       isActive: true,
@@ -17,7 +18,6 @@ router.get('/', protect, async (req, res) => {
       .populate('users', 'name photos college branch year lastActive')
       .sort({ lastMessageAt: -1, createdAt: -1 });
 
-    // Format matches to show the "other" user
     const formatted = matches.map((match) => {
       const otherUser = match.users.find(
         (u) => u._id.toString() !== req.user._id.toString()
@@ -41,7 +41,7 @@ router.get('/', protect, async (req, res) => {
 });
 
 // @route   DELETE /api/matches/:matchId
-// @desc    Unmatch (delete) a match
+// @desc    Unmatch
 // @access  Private
 router.delete('/:matchId', protect, async (req, res) => {
   try {
@@ -50,25 +50,17 @@ router.delete('/:matchId', protect, async (req, res) => {
       users: req.user._id,
     });
 
-    if (!match) {
-      return res.status(404).json({ error: 'Match not found.' });
-    }
+    if (!match) return res.status(404).json({ error: 'Match not found.' });
 
-    // Deactivate match
     match.isActive = false;
     await match.save();
 
-    // Remove from both users' matches array
     const otherUserId = match.users.find(
       (id) => id.toString() !== req.user._id.toString()
     );
 
-    await User.findByIdAndUpdate(req.user._id, {
-      $pull: { matches: otherUserId },
-    });
-    await User.findByIdAndUpdate(otherUserId, {
-      $pull: { matches: req.user._id },
-    });
+    await User.findByIdAndUpdate(req.user._id, { $pull: { matches: otherUserId } });
+    await User.findByIdAndUpdate(otherUserId, { $pull: { matches: req.user._id } });
 
     res.json({ success: true, message: 'Unmatched.' });
   } catch (err) {

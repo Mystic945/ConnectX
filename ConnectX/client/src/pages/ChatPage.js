@@ -19,18 +19,28 @@ export default function ChatPage() {
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef(null);
   const typingTimer = useRef(null);
+  const sentIds = useRef(new Set()); // track sent message IDs to avoid duplicates
 
   useEffect(() => {
     joinRoom(roomId);
     const cleanup = onMessage((msg) => {
-      setMessages(prev => [...prev, msg]);
+      // Skip if we already have this message (sent by us via REST)
+      if (sentIds.current.has(msg.tempId)) {
+        sentIds.current.delete(msg.tempId);
+        return;
+      }
       setTyping(false);
+      setMessages(prev => {
+        // Avoid duplicate by _id
+        if (prev.find(m => m._id === msg._id)) return prev;
+        return [...prev, msg];
+      });
     });
     return cleanup;
   }, [roomId, joinRoom, onMessage]);
 
   useEffect(() => {
-    const fetchMessages = async () => {
+    const fetchData = async () => {
       try {
         const [msgRes, matchRes] = await Promise.all([
           api.get(`/messages/${roomId}`),
@@ -45,7 +55,7 @@ export default function ChatPage() {
         setLoading(false);
       }
     };
-    fetchMessages();
+    fetchData();
   }, [roomId]);
 
   useEffect(() => {
@@ -58,8 +68,12 @@ export default function ChatPage() {
     setInput('');
     emitTyping(roomId, false);
 
+    // Generate a temp ID to track this message
+    const tempId = `temp_${Date.now()}_${Math.random()}`;
+
+    // Add optimistic message locally
     const optimistic = {
-      _id: Date.now().toString(),
+      _id: tempId,
       content,
       sender: { _id: user._id, name: user.name },
       createdAt: new Date().toISOString(),
@@ -68,10 +82,18 @@ export default function ChatPage() {
     setMessages(prev => [...prev, optimistic]);
 
     try {
-      sendMessage({ roomId, content, senderId: user._id });
-      await api.post(`/messages/${roomId}`, { content });
+      // Save to DB via REST only — don't emit via socket
+      // (server will broadcast to the room via socket on its own if needed)
+      const res = await api.post(`/messages/${roomId}`, { content });
+      
+      // Replace optimistic message with real one from server
+      setMessages(prev => prev.map(m => m._id === tempId ? res.data.message : m));
+      
+      // Notify friend via socket
+      sendMessage({ roomId, content, senderId: user._id, tempId, _id: res.data.message._id });
     } catch {
       toast.error('Could not send message.');
+      setMessages(prev => prev.filter(m => m._id !== tempId));
     }
   }, [input, roomId, user, sendMessage, emitTyping]);
 
@@ -89,8 +111,11 @@ export default function ChatPage() {
     typingTimer.current = setTimeout(() => emitTyping(roomId, false), 1500);
   };
 
-  const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
   const otherUser = matchInfo?.user;
@@ -133,16 +158,20 @@ export default function ChatPage() {
         )}
 
         {messages.map((msg, i) => {
-          const isMe = msg.sender?._id === user._id || msg.sender === user._id;
-          const showTime = i === messages.length - 1 ||
-            new Date(messages[i + 1]?.createdAt) - new Date(msg.createdAt) > 5 * 60 * 1000;
+          const senderId = msg.sender?._id || msg.sender;
+          const isMe = senderId === user._id || senderId?.toString() === user._id?.toString();
+          const nextMsg = messages[i + 1];
+          const nextSenderId = nextMsg?.sender?._id || nextMsg?.sender;
+          const showTime = !nextMsg ||
+            nextSenderId?.toString() !== senderId?.toString() ||
+            new Date(nextMsg.createdAt) - new Date(msg.createdAt) > 5 * 60 * 1000;
 
           return (
             <div key={msg._id} className={`msg-row ${isMe ? 'msg-me' : 'msg-them'}`}>
-              <div className={`msg-bubble ${isMe ? 'bubble-me' : 'bubble-them'}`}>
+              <div className={`msg-bubble ${isMe ? 'bubble-me' : 'bubble-them'} ${msg.optimistic ? 'optimistic' : ''}`}>
                 {msg.content}
               </div>
-              {showTime && (
+              {showTime && formatTime(msg.createdAt) && (
                 <div className="msg-time">{formatTime(msg.createdAt)}</div>
               )}
             </div>
@@ -170,11 +199,7 @@ export default function ChatPage() {
           onKeyDown={handleKeyDown}
           rows={1}
         />
-        <button
-          className="chat-send-btn"
-          onClick={handleSend}
-          disabled={!input.trim()}
-        >
+        <button className="chat-send-btn" onClick={handleSend} disabled={!input.trim()}>
           ↑
         </button>
       </div>
