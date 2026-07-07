@@ -42,8 +42,6 @@ router.get('/discover', protect, async (req, res) => {
       filter.gender = currentUser.interestedIn;
     }
 
-    if (branch) filter.branch = branch;
-    if (year) filter.year = year;
 
     const users = await User.find(filter)
       .select('name age gender bio photos college branch year interests skills lookingFor mode lastActive')
