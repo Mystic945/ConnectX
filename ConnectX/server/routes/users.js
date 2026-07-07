@@ -6,14 +6,14 @@ const { protect } = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/users/discover
-// @desc    Get users to swipe on (filtered, excluding already swiped)
+// @desc    Get users to swipe on
 // @access  Private
 router.get('/discover', protect, async (req, res) => {
   try {
-    const { mode, branch, year, limit = 20 } = req.query;
+    const { mode } = req.query;
     const currentUser = req.user;
 
-    // Build exclusion list - already swiped + self + blocked
+    // Exclude self, already swiped, blocked, and matched users
     const excludeIds = [
       currentUser._id,
       ...currentUser.swipedRight,
@@ -22,17 +22,16 @@ router.get('/discover', protect, async (req, res) => {
       ...currentUser.matches,
     ];
 
-    // Build filter
+    // Only filter by same college and active status
+    // No profileComplete, no photo, no year, no branch filters
     const filter = {
       _id: { $nin: excludeIds },
       college: currentUser.college,
       isActive: true,
-      'photos.0': { $exists: true },
-      profileComplete: true,
       blockedUsers: { $nin: [currentUser._id] },
     };
 
-    // Mode filter
+    // Mode filter — only apply if specifically social or dating
     if (mode && mode !== 'both') {
       filter.$or = [{ mode: mode }, { mode: 'both' }];
     }
@@ -42,10 +41,9 @@ router.get('/discover', protect, async (req, res) => {
       filter.gender = currentUser.interestedIn;
     }
 
-
     const users = await User.find(filter)
       .select('name age gender bio photos college branch year interests skills lookingFor mode lastActive')
-      .limit(parseInt(limit))
+      .limit(50)
       .sort({ lastActive: -1 });
 
     res.json({ success: true, users });
@@ -85,12 +83,11 @@ router.post('/swipe', protect, async (req, res) => {
     let match = null;
 
     if (direction === 'right') {
-      // Add to swipedRight
       await User.findByIdAndUpdate(currentUser._id, {
         $addToSet: { swipedRight: targetUserId },
       });
 
-      // Check if target also swiped right on current user
+      // Check if target already swiped right on current user
       const targetUser2 = await User.findById(targetUserId);
       const alreadySwiped = targetUser2.swipedRight
         .map(id => id.toString())
@@ -120,7 +117,6 @@ router.post('/swipe', protect, async (req, res) => {
         }
       }
     } else {
-      // Swipe left
       await User.findByIdAndUpdate(currentUser._id, {
         $addToSet: { swipedLeft: targetUserId },
       });
@@ -188,6 +184,7 @@ router.put('/profile', protect, async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // Update profileComplete
     const isComplete = user.checkProfileComplete();
     if (isComplete !== user.profileComplete) {
       user.profileComplete = isComplete;
