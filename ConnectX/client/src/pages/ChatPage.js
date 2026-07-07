@@ -1,110 +1,79 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import api from '../utils/api';
 import toast from 'react-hot-toast';
 import './ChatPage.css';
 
 export default function ChatPage() {
   const { roomId } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { joinRoom, sendMessage, onMessage, emitTyping, isOnline } = useSocket();
+  const navigate = useNavigate();
 
-  const matchedUser = location.state?.matchedUser;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [matchInfo, setMatchInfo] = useState(null);
   const [typing, setTyping] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-
   const bottomRef = useRef(null);
-  const typingTimeout = useRef(null);
-  const inputRef = useRef(null);
+  const typingTimer = useRef(null);
 
-  // Load messages
   useEffect(() => {
-    const load = async () => {
+    joinRoom(roomId);
+    const cleanup = onMessage((msg) => {
+      setMessages(prev => [...prev, msg]);
+      setTyping(false);
+    });
+    return cleanup;
+  }, [roomId, joinRoom, onMessage]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
       try {
-        const res = await api.get(`/messages/${roomId}`);
-        setMessages(res.data.messages);
+        const [msgRes, matchRes] = await Promise.all([
+          api.get(`/messages/${roomId}`),
+          api.get('/matches'),
+        ]);
+        setMessages(msgRes.data.messages);
+        const match = matchRes.data.matches.find(m => m.roomId === roomId);
+        setMatchInfo(match);
       } catch {
-        toast.error('Could not load messages.');
+        toast.error('Could not load chat.');
       } finally {
         setLoading(false);
       }
     };
-    load();
-    joinRoom(roomId);
-  }, [roomId, joinRoom]);
+    fetchMessages();
+  }, [roomId]);
 
-  // Socket listener
-  useEffect(() => {
-    const cleanup = onMessage((msg) => {
-      if (msg.roomId === roomId) {
-        setMessages(prev => {
-          // Avoid duplicate if we already added optimistically
-          const exists = prev.some(m => m._id === msg._id || (m.tempId && m.tempId === msg.tempId));
-          if (exists) return prev;
-          return [...prev, msg];
-        });
-      }
-    });
-
-    // Typing indicators
-    const socket = window.__socket;
-    return cleanup;
-  }, [roomId, onMessage]);
-
-  // Scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async () => {
-    const text = input.trim();
-    if (!text || sending) return;
-
-    const tempId = Date.now().toString();
-    const optimistic = {
-      _id: tempId,
-      tempId,
-      roomId,
-      content: text,
-      sender: { _id: user._id, name: user.name, photos: user.photos },
-      createdAt: new Date().toISOString(),
-      pending: true,
-    };
-
-    setMessages(prev => [...prev, optimistic]);
+  const handleSend = useCallback(async () => {
+    if (!input.trim()) return;
+    const content = input.trim();
     setInput('');
-    setSending(true);
+    emitTyping(roomId, false);
+
+    const optimistic = {
+      _id: Date.now().toString(),
+      content,
+      sender: { _id: user._id, name: user.name },
+      createdAt: new Date().toISOString(),
+      optimistic: true,
+    };
+    setMessages(prev => [...prev, optimistic]);
 
     try {
-      const res = await api.post(`/messages/${roomId}`, { content: text });
-      // Replace optimistic with real
-      setMessages(prev => prev.map(m => m.tempId === tempId ? res.data.message : m));
-      // Also send via socket so other user sees it instantly
-      sendMessage({ ...res.data.message, roomId });
+      sendMessage({ roomId, content, senderId: user._id });
+      await api.post(`/messages/${roomId}`, { content });
     } catch {
-      setMessages(prev => prev.filter(m => m.tempId !== tempId));
-      setInput(text);
-      toast.error('Failed to send message.');
-    } finally {
-      setSending(false);
-      inputRef.current?.focus();
+      toast.error('Could not send message.');
     }
-  };
-
-  const handleInputChange = (e) => {
-    setInput(e.target.value);
-    emitTyping(roomId, true);
-    clearTimeout(typingTimeout.current);
-    typingTimeout.current = setTimeout(() => emitTyping(roomId, false), 1500);
-  };
+  }, [input, roomId, user, sendMessage, emitTyping]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -113,124 +82,98 @@ export default function ChatPage() {
     }
   };
 
-  const handleReport = async () => {
-    if (!matchedUser) return;
-    const reason = window.prompt('Why are you reporting this user? (harassment / inappropriate content / fake profile / other)');
-    if (!reason) return;
-    try {
-      await api.post('/users/report', { targetUserId: matchedUser._id, reason });
-      toast.success('User reported and blocked.');
-      navigate('/matches');
-    } catch {
-      toast.error('Could not submit report.');
-    }
-  };
-
-  const isMe = (msg) => {
-    const senderId = msg.sender?._id || msg.sender;
-    return senderId === user._id || senderId?.toString() === user._id?.toString();
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    emitTyping(roomId, true);
+    clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(() => emitTyping(roomId, false), 1500);
   };
 
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    return new Date(date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
+
+  const otherUser = matchInfo?.user;
+
+  if (loading) return <div className="flex-center" style={{ height: '100%' }}><div className="spinner" /></div>;
 
   return (
     <div className="chat-page">
       {/* Header */}
       <div className="chat-header">
-        <button className="chat-back-btn" onClick={() => navigate('/matches')}>←</button>
-        <Link to={matchedUser ? `/profile/${matchedUser._id}` : '#'} className="chat-user-info">
-          <div className="chat-avatar-wrap">
-            {matchedUser?.photos?.[0] ? (
-              <img src={matchedUser.photos[0].url} alt={matchedUser.name} className="chat-avatar" />
-            ) : (
-              <div className="chat-avatar-placeholder">{matchedUser?.name?.[0] || '?'}</div>
-            )}
-            {matchedUser && isOnline(matchedUser._id) && <span className="chat-online-dot" />}
-          </div>
-          <div>
-            <div className="chat-username">{matchedUser?.name || 'Match'}</div>
-            <div className="chat-status">
-              {matchedUser && isOnline(matchedUser._id) ? (
-                <span className="status-online">● Active now</span>
-              ) : (
-                <span className="status-offline">{matchedUser?.branch}</span>
-              )}
-            </div>
-          </div>
-        </Link>
-        <div className="chat-menu-wrap">
-          <button className="chat-menu-btn" onClick={() => setShowMenu(v => !v)}>⋯</button>
-          {showMenu && (
-            <div className="chat-dropdown">
-              <button onClick={handleReport}>🚩 Report</button>
+        <button className="chat-back" onClick={() => navigate('/matches')}>←</button>
+        <div className="chat-header-user">
+          {otherUser?.photos?.[0] ? (
+            <img src={otherUser.photos[0].url} alt="" className="avatar" style={{ width: 36, height: 36 }} />
+          ) : (
+            <div className="avatar-placeholder" style={{ width: 36, height: 36, fontSize: 14 }}>
+              {otherUser?.name?.[0]}
             </div>
           )}
+          <div>
+            <div className="chat-header-name">{otherUser?.name}</div>
+            <div className="chat-header-status">
+              {isOnline(otherUser?._id)
+                ? <><span className="online-dot" /> Active now</>
+                : otherUser?.branch && `${otherUser.branch} · ${otherUser.year}`
+              }
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="chat-messages" onClick={() => setShowMenu(false)}>
-        {loading ? (
-          <div className="flex-center" style={{ height: '100%' }}>
-            <div className="spinner" />
-          </div>
-        ) : messages.length === 0 ? (
+      <div className="chat-messages">
+        {messages.length === 0 && (
           <div className="chat-empty">
-            <div className="chat-empty-icon">💬</div>
-            <p>You matched! Send the first message.</p>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>👋</div>
+            <p>You matched with <strong>{otherUser?.name}</strong>.</p>
+            <p>Say something!</p>
           </div>
-        ) : (
-          <>
-            {messages.map((msg, i) => {
-              const mine = isMe(msg);
-              const prevMsg = messages[i - 1];
-              const showDate = !prevMsg || new Date(msg.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString();
-              return (
-                <React.Fragment key={msg._id}>
-                  {showDate && (
-                    <div className="chat-date-divider">
-                      {new Date(msg.createdAt).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    </div>
-                  )}
-                  <div className={`msg-row ${mine ? 'mine' : 'theirs'}`}>
-                    <div className={`msg-bubble ${mine ? 'bubble-mine' : 'bubble-theirs'} ${msg.pending ? 'bubble-pending' : ''}`}>
-                      {msg.content}
-                      <span className="msg-time">{formatTime(msg.createdAt)}</span>
-                    </div>
-                  </div>
-                </React.Fragment>
-              );
-            })}
-            {typing && (
-              <div className="msg-row theirs">
-                <div className="msg-bubble bubble-theirs typing-bubble">
-                  <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </>
         )}
+
+        {messages.map((msg, i) => {
+          const isMe = msg.sender?._id === user._id || msg.sender === user._id;
+          const showTime = i === messages.length - 1 ||
+            new Date(messages[i + 1]?.createdAt) - new Date(msg.createdAt) > 5 * 60 * 1000;
+
+          return (
+            <div key={msg._id} className={`msg-row ${isMe ? 'msg-me' : 'msg-them'}`}>
+              <div className={`msg-bubble ${isMe ? 'bubble-me' : 'bubble-them'}`}>
+                {msg.content}
+              </div>
+              {showTime && (
+                <div className="msg-time">{formatTime(msg.createdAt)}</div>
+              )}
+            </div>
+          );
+        })}
+
+        {typing && (
+          <div className="msg-row msg-them">
+            <div className="bubble-them typing-indicator">
+              <span /><span /><span />
+            </div>
+          </div>
+        )}
+
+        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
       <div className="chat-input-bar">
         <textarea
-          ref={inputRef}
           className="chat-input"
-          placeholder="Type a message..."
+          placeholder="Message..."
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           rows={1}
-          maxLength={1000}
         />
         <button
-          className={`chat-send-btn ${input.trim() ? 'active' : ''}`}
+          className="chat-send-btn"
           onClick={handleSend}
-          disabled={!input.trim() || sending}
+          disabled={!input.trim()}
         >
           ↑
         </button>

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import './AuthPages.css';
 
 const MAHARASHTRA_COLLEGES = [
+  'D.Y. Patil Institute of Technology, Pimpri',
   'MIT College of Engineering, Pune',
   'COEP Technological University, Pune',
   'Pune Institute of Computer Technology',
@@ -23,8 +24,7 @@ const MAHARASHTRA_COLLEGES = [
   'Government College of Engineering Aurangabad',
   'Government College of Engineering Amravati',
   'Nagpur Institute of Technology',
-  'Dr DY Patil Institue of Technology Pimpri Pune',
-  'other',
+  'Other',
 ];
 
 const BRANCHES = [
@@ -35,15 +35,11 @@ const BRANCHES = [
   'Mechanical Engineering',
   'Civil Engineering',
   'Electrical Engineering',
-  'ENTC',
   'AIDS (AI & Data Science)',
   'IoT',
   'Chemical Engineering',
   'Production Engineering',
-  'MCA',
-  'MBA',
-  'BCA',
-  'BBA',
+  'MCA', 'MBA', 'BCA', 'BBA',
   'Other',
 ];
 
@@ -56,26 +52,20 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
+  const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) {
-      toast.error('Passwords do not match.');
-      return;
-    }
-    if (form.password.length < 8) {
-      toast.error('Password must be at least 8 characters.');
-      return;
-    }
+    if (form.password !== form.confirmPassword) { toast.error('Passwords do not match.'); return; }
+    if (form.password.length < 8) { toast.error('Password must be at least 8 characters.'); return; }
     setLoading(true);
     try {
       const { confirmPassword, ...data } = form;
       await register(data);
-      toast.success('Account created! Set up your profile.');
+      toast.success('Account created!');
       navigate('/setup');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Registration failed. Please try again.');
+      toast.error(err.response?.data?.error || 'Registration failed.');
     } finally {
       setLoading(false);
     }
@@ -83,99 +73,126 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card card" style={{ maxWidth: 480 }}>
-        <div className="auth-header">
-          <Link to="/" className="auth-logo">
-            🎓 Connect<span className="text-gradient">X</span>
-          </Link>
-          <h2>Create your account</h2>
-          <p>Join your campus community</p>
+      {/* Left panel */}
+      <div className="auth-left">
+        <div className="auth-brand">
+          <div className="auth-brand-icon">CX</div>
+          <span className="auth-brand-name">ConnectX</span>
         </div>
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <input type="text" className="form-input" placeholder="Arya Sharma" value={form.name} onChange={set('name')} required />
+        <div className="auth-left-content">
+          <h2>Join your campus community.</h2>
+          <p>Thousands of students are already connecting. Create your account and start swiping.</p>
+          <div className="auth-left-features">
+            <div className="auth-left-feature">
+              <div className="auth-left-feature-icon">🎓</div>
+              Only students from your college
             </div>
-            <div className="form-group">
-              <label className="form-label">Age</label>
-              <input type="number" className="form-input" placeholder="19" min="17" max="30" value={form.age} onChange={set('age')} required />
+            <div className="auth-left-feature">
+              <div className="auth-left-feature-icon">⚡</div>
+              Set up your profile in 3 minutes
+            </div>
+            <div className="auth-left-feature">
+              <div className="auth-left-feature-icon">💜</div>
+              Free forever — no hidden fees
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="form-group">
-            <label className="form-label">Email</label>
-            <input type="email" className="form-input" placeholder="your@email.com" value={form.email} onChange={set('email')} required />
+      {/* Right panel - form */}
+      <div className="auth-right">
+        <div className="auth-card" style={{ maxWidth: 460 }}>
+          <div className="auth-mobile-logo">
+            <div className="auth-mobile-logo-icon">CX</div>
+            <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: '-0.02em' }}>ConnectX</span>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Gender</label>
-            <select className="form-select" value={form.gender} onChange={set('gender')} required>
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="non-binary">Non-binary</option>
-              <option value="prefer-not-to-say">Prefer not to say</option>
-            </select>
+          <div className="auth-card-header">
+            <h1>Create your account</h1>
+            <p>Takes less than 2 minutes</p>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">College</label>
-            <select className="form-select" value={form.college} onChange={set('college')} required>
-              <option value="">Select your college</option>
-              {MAHARASHTRA_COLLEGES.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-row-2">
+              <div className="form-group">
+                <label className="form-label">Full name</label>
+                <input type="text" className="form-input" placeholder="Arya Sharma" value={form.name} onChange={set('name')} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Age</label>
+                <input type="number" className="form-input" placeholder="19" min="17" max="30" value={form.age} onChange={set('age')} required />
+              </div>
+            </div>
 
-          <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Branch</label>
-              <select className="form-select" value={form.branch} onChange={set('branch')} required>
-                <option value="">Select branch</option>
-                {BRANCHES.map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
+              <label className="form-label">Email</label>
+              <input type="email" className="form-input" placeholder="you@example.com" value={form.email} onChange={set('email')} required />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Gender</label>
+              <select className="form-select" value={form.gender} onChange={set('gender')} required>
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="non-binary">Non-binary</option>
+                <option value="prefer-not-to-say">Prefer not to say</option>
               </select>
             </div>
+
             <div className="form-group">
-              <label className="form-label">Year</label>
-              <select className="form-select" value={form.year} onChange={set('year')} required>
-                <option value="">Year</option>
-                <option value="FY">FY</option>
-                <option value="SY">SY</option>
-                <option value="TY">TY</option>
-                <option value="Final Year">Final Year</option>
-                <option value="Postgrad">Postgrad</option>
+              <label className="form-label">College</label>
+              <select className="form-select" value={form.college} onChange={set('college')} required>
+                <option value="">Select your college</option>
+                {MAHARASHTRA_COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-          </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input type="password" className="form-input" placeholder="Min 8 characters" value={form.password} onChange={set('password')} required />
+            <div className="form-row-2">
+              <div className="form-group">
+                <label className="form-label">Branch</label>
+                <select className="form-select" value={form.branch} onChange={set('branch')} required>
+                  <option value="">Select branch</option>
+                  {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Year</label>
+                <select className="form-select" value={form.year} onChange={set('year')} required>
+                  <option value="">Year</option>
+                  <option value="FY">FY</option>
+                  <option value="SY">SY</option>
+                  <option value="TY">TY</option>
+                  <option value="Final Year">Final Year</option>
+                  <option value="Postgrad">Postgrad</option>
+                </select>
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Confirm Password</label>
-              <input type="password" className="form-input" placeholder="Repeat password" value={form.confirmPassword} onChange={set('confirmPassword')} required />
-            </div>
-          </div>
 
-          <p className="terms-note">
-            By signing up, you agree to use this platform respectfully. This is an unofficial student project.
+            <div className="form-row-2">
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <input type="password" className="form-input" placeholder="Min 8 chars" value={form.password} onChange={set('password')} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Confirm password</label>
+                <input type="password" className="form-input" placeholder="Repeat" value={form.confirmPassword} onChange={set('confirmPassword')} required />
+              </div>
+            </div>
+
+            <p className="auth-terms">
+              By signing up you agree to use ConnectX respectfully.
+            </p>
+
+            <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
+              {loading ? 'Creating account...' : 'Create account'}
+            </button>
+          </form>
+
+          <p className="auth-footer">
+            Already have an account? <Link to="/login">Log in</Link>
           </p>
-
-          <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          Already have an account? <Link to="/login">Log in</Link>
-        </p>
+        </div>
       </div>
     </div>
   );

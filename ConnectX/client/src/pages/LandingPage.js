@@ -8,93 +8,92 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="landing-nav">
         <div className="landing-logo">
-          <span className="logo-icon">🎓</span>
-          <span className="logo-text">Connect<span className="text-gradient">X</span></span>
+          <div className="landing-logo-icon">CX</div>
+          <span className="landing-logo-text">ConnectX</span>
         </div>
-        <div className="landing-nav-links">
+        <div className="landing-nav-actions">
           <Link to="/login" className="btn btn-ghost btn-sm">Log in</Link>
-          <Link to="/register" className="btn btn-primary btn-sm">Join now</Link>
+          <Link to="/register" className="btn btn-primary btn-sm">Get started</Link>
         </div>
       </nav>
 
       {/* Hero */}
       <section className="hero">
-        <div className="hero-badge">
-          <span>✦</span> Only for college students
+        <div className="hero-eyebrow">
+          <span className="hero-eyebrow-dot" />
+          Only for college students in Maharashtra
         </div>
+
         <h1 className="hero-title">
-          Your campus,<br />
-          <span className="text-gradient">your connections.</span>
+          Your campus.<br />
+          <span className="hero-title-accent">Your people.</span>
         </h1>
-        <p className="hero-subtitle">
-          Find study partners, project teammates, friends,<br />
-          or something more — all within your college.
+
+        <p className="hero-desc">
+          Find study partners, teammates, and friends — or something more.
+          ConnectX connects you with people from your own college.
         </p>
-        <div className="hero-actions">
+
+        <div className="hero-cta">
           <Link to="/register" className="btn btn-primary btn-lg">
-            Get started free
+            Join ConnectX free
           </Link>
-          <Link to="/login" className="btn btn-secondary btn-lg">
-            Already a member
+          <Link to="/login" className="btn btn-ghost btn-lg">
+            Log in
           </Link>
         </div>
 
-        {/* Floating cards preview */}
-        <div className="hero-preview">
-          <div className="preview-card preview-card-1 float">
-            <div className="preview-avatar" style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' }}>A</div>
-            <div className="preview-info">
-              <div className="preview-name">Arya, 19</div>
-              <div className="preview-sub">Computer Sci • FY</div>
-            </div>
-            <div className="preview-tag tag tag-purple">Open to projects</div>
+        {/* Stats */}
+        <div className="hero-stats">
+          <div className="stat">
+            <div className="stat-value">2 modes</div>
+            <div className="stat-label">Social + Dating</div>
           </div>
-          <div className="preview-card preview-card-2">
-            <div className="preview-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>R</div>
-            <div className="preview-info">
-              <div className="preview-name">Rohan, 21</div>
-              <div className="preview-sub">Mech Engg • TY</div>
-            </div>
-            <div className="preview-tag tag tag-blue">Looking for team</div>
+          <div className="stat-divider" />
+          <div className="stat">
+            <div className="stat-value">1 campus</div>
+            <div className="stat-label">Your college only</div>
           </div>
-          <div className="preview-card preview-card-3">
-            <div className="preview-avatar" style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)' }}>P</div>
-            <div className="preview-info">
-              <div className="preview-name">Priya, 20</div>
-              <div className="preview-sub">IT • SY</div>
-            </div>
-            <div className="preview-tag tag tag-pink">Dating</div>
+          <div className="stat-divider" />
+          <div className="stat">
+            <div className="stat-value">Real-time</div>
+            <div className="stat-label">Instant chat</div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
+      {/* Feature cards */}
       <section className="features">
         <div className="features-grid">
-          <div className="feature-card card">
-            <div className="feature-icon">🤝</div>
-            <h3>Social Connect</h3>
-            <p>Find study partners, project teammates, hackathon collaborators, or just friends on campus.</p>
+          <div className="feature-card">
+            <div className="feature-card-icon">⚡</div>
+            <div className="feature-card-body">
+              <h3>Social Connect</h3>
+              <p>Find study partners, hackathon teams, and project collaborators within your campus.</p>
+            </div>
           </div>
-          <div className="feature-card card">
-            <div className="feature-icon">💜</div>
-            <h3>Dating</h3>
-            <p>Swipe, match, and chat with people from your college who are also looking for something more.</p>
+          <div className="feature-card">
+            <div className="feature-card-icon">💜</div>
+            <div className="feature-card-body">
+              <h3>Dating</h3>
+              <p>Swipe and match with people from your college who are looking for something more.</p>
+            </div>
           </div>
-          <div className="feature-card card">
-            <div className="feature-icon">🔒</div>
-            <h3>College-only</h3>
-            <p>Your circle stays within your campus. Everyone here is a real student, just like you.</p>
+          <div className="feature-card">
+            <div className="feature-card-icon">🔒</div>
+            <div className="feature-card-body">
+              <h3>College-only</h3>
+              <p>Your discovery is scoped to your campus. Everyone here goes to your college.</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="landing-footer">
-        <p>© 2026 ConnectX • Built by a student, for students</p>
-        <p className="footer-disclaimer">
-          This is an independent, unofficial project — not affiliated with any college or university.
-        </p>
+        <span>© 2026 ConnectX</span>
+        <span className="footer-dot">·</span>
+        <span>Built by a student, for students</span>
       </footer>
     </div>
   );
