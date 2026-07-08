@@ -12,9 +12,13 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
     minlength: 8,
-    select: false, // never return password in queries
+    select: false,
+    // Not required — Google users have no password
+  },
+  googleId: {
+    type: String,
+    default: null,
   },
   emailVerified: {
     type: Boolean,
@@ -46,7 +50,7 @@ const userSchema = new mongoose.Schema({
   },
   photos: [{
     url: String,
-    publicId: String, // Cloudinary public ID for deletion
+    publicId: String,
   }],
 
   // College info
@@ -64,11 +68,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['FY', 'SY', 'TY', 'Final Year', 'Postgrad'],
     required: true,
-  },
-  rollNumber: {
-    type: String,
-    trim: true,
-    default: '',
   },
 
   // App preferences
@@ -88,23 +87,17 @@ const userSchema = new mongoose.Schema({
   },
 
   // Interests & tags
-  interests: [{
-    type: String,
-    maxlength: 30,
-  }],
-  skills: [{
-    type: String,
-    maxlength: 30,
-  }],
+  interests: [{ type: String, maxlength: 30 }],
+  skills: [{ type: String, maxlength: 30 }],
 
   // Swipe data
   swipedRight: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  swipedLeft: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  matches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  swipedLeft:  [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  matches:     [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
-  // Blocked users
+  // Safety
   blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  reportedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  reportedBy:   [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
   // Profile completeness
   profileComplete: {
@@ -124,21 +117,22 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Hash password before saving
+// Hash password before saving (only if password exists and was modified)
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
 // Compare password
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Check if profile is complete enough to swipe
+// Check if profile is complete
 userSchema.methods.checkProfileComplete = function () {
-  return (
+  return !!(
     this.name &&
     this.age &&
     this.gender &&
@@ -146,7 +140,7 @@ userSchema.methods.checkProfileComplete = function () {
     this.branch &&
     this.year &&
     this.photos.length > 0 &&
-    this.bio.length > 10
+    this.bio && this.bio.length > 10
   );
 };
 

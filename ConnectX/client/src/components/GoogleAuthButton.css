@@ -1,0 +1,18 @@
+.google-btn-wrap {
+  width: 100%;
+}
+
+.google-btn-inner {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Override Google button styles to match our dark theme */
+.google-btn-inner > div {
+  width: 100% !important;
+}
+
+.google-btn-inner iframe {
+  width: 100% !important;
+}
