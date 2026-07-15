@@ -2,6 +2,7 @@
 
 > A social networking and dating web app built for college students in Maharashtra.
 > Find study partners, project teammates, friends, or something more — all within your campus.
+> Link for ConnectX: https://connect-x-blond.vercel.app/
 
 ---
 
