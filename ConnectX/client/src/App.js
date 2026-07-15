@@ -15,9 +15,10 @@ import MatchesPage from './pages/MatchesPage';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import EditProfilePage from './pages/EditProfilePage';
+import UserProfilePage from './pages/UserProfilePage'; // ← NEW
 import Layout from './components/Layout';
 
-// Protected route wrapper
+// Protected route — must be logged in
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -25,7 +26,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Profile setup guard
+// Setup guard — logged in but profile not complete
 const SetupGuard = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -34,7 +35,7 @@ const SetupGuard = ({ children }) => {
   return children;
 };
 
-// Public only (redirect if logged in)
+// Public only — redirect if already logged in
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -45,22 +46,24 @@ const PublicRoute = ({ children }) => {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
+      {/* Public pages */}
       <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
 
-      {/* Setup (logged in but profile not complete) */}
+      {/* Profile setup after registration */}
       <Route path="/setup" element={<ProtectedRoute><SetupProfilePage /></ProtectedRoute>} />
 
-      {/* App - needs login + complete profile */}
+      {/* Main app — needs login + complete profile */}
       <Route path="/" element={<SetupGuard><Layout /></SetupGuard>}>
         <Route path="discover" element={<SwipePage />} />
         <Route path="matches" element={<MatchesPage />} />
         <Route path="chat/:roomId" element={<ChatPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="profile/edit" element={<EditProfilePage />} />
-        <Route path="profile/:userId" element={<ProfilePage />} />
+
+        {/* View any user's profile by their ID ← NEW ROUTE */}
+        <Route path="profile/:userId" element={<UserProfilePage />} />
       </Route>
 
       {/* Catch-all */}
@@ -79,13 +82,13 @@ export default function App() {
             toastOptions={{
               duration: 3000,
               style: {
-                background: '#1a1a2e',
+                background: '#1a1a1a',
                 color: '#fff',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
+                border: '1px solid rgba(99,102,241,0.3)',
                 borderRadius: '12px',
                 fontSize: '14px',
               },
-              success: { iconTheme: { primary: '#8b5cf6', secondary: '#fff' } },
+              success: { iconTheme: { primary: '#6366f1', secondary: '#fff' } },
               error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
             }}
           />

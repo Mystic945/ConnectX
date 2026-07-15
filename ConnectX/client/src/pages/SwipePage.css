@@ -350,3 +350,20 @@
 }
 .match-modal p { font-size: 14px; color: var(--text-2); margin-bottom: 28px; }
 .match-modal-actions { display: flex; flex-direction: column; gap: 10px; }
+/* Add this at the bottom of your existing SwipePage.css */
+
+/* "View profile" hint shown in the card info area */
+.view-profile-hint {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
+  margin-left: 2px;
+  transition: color 0.15s;
+}
+
+.profile-card-info:hover .view-profile-hint {
+  color: rgba(255,255,255,0.85);
+}
+
